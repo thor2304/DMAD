@@ -1,0 +1,2 @@
+setuptools==67.2.0
+python-decouple==3.7

@@ -1,5 +1,9 @@
+import math
+import numpy as np
 import random
 import logging.config
+from typing import Callable, Tuple
+from math import log10
 
 from DMAD.Logging.logging_config import config_dict
 
@@ -8,11 +12,74 @@ logging.config.dictConfig(config_dict)
 log = logging.getLogger(__name__)
 
 
-def permutation_generator(n: int) -> list:
-    output = [x for x in range(n)]
-    random.shuffle(output)
+def _brute_force(max_val: int, func: Callable[[int], float], startvalue: int, stepsize: int) -> tuple[int, int]:
+    n = startvalue
+    time = func(n)
+    prev_n = 1
+    while time < max_val:
+        prev_n = n
+        n += stepsize
+        time = func(n)
 
-    return output
+    return n - 1, prev_n
+
+
+def accelerated_search(max_val: int, func: Callable[[int], float]) -> int:
+    n = 1
+    time = func(n)
+    prev_n = 1
+    while time < max_val:
+        prev_n = n
+        n += n
+        time = func(n)
+
+    step_size = (n - prev_n) // 10
+    while step_size > 1000:
+        n, prev_n = _brute_force(max_val, func, prev_n, step_size)
+        step_size = (n - prev_n) // 100
+
+    return _brute_force(max_val, func, prev_n, 1)[0]
+
+
+def fac(n: int) -> int:
+    return n * fac(n - 1) if n > 2 else 2
+
+
+def task1():
+    # Create an output table of how large n can be for the function to still complete in less than x time
+    # Assume that one unit of work takes 1 ns to complete
+    # print(type(brute_force))
+
+    times = {
+        "one second": 10 ** 9,
+        "one minute": 60 * 10 ** 9,
+        "one hour": 60 * 60 * 10 ** 9,
+        "one day": 24 * 60 * 60 * 10 ** 9,
+        "one month": 30 * 24 * 60 * 60 * 10 ** 9,
+        "one year": 365 * 24 * 60 * 60 * 10 ** 9,
+        "one century": 1000 * 365 * 24 * 60 * 60 * 10 ** 9,
+
+    }
+
+    non_brute_functions = {
+        "fac": fac,
+        "2**n": (lambda x: 2 ** x),
+        "n**3": (lambda x: x ** 3),
+        "n**2": (lambda x: x ** 2),
+        "n * log n": (lambda x: x * log10(x)),
+        "n": (lambda x: x),
+        "sqrt": math.sqrt,
+        # "log": log10,
+    }
+
+    for key, val in non_brute_functions.items():
+        print(key)
+        for time, ns in times.items():
+            print(f"{time}: {accelerated_search(ns, val)}")
+
+    print(f"log")
+    for time, ns in times.items():
+        print(f"{time}: 10**{ns} - 1")
 
 
 def count_cycles(input_list: list[int]) -> int:
@@ -38,6 +105,13 @@ def count_cycles(input_list: list[int]) -> int:
     return number_of_cycles
 
 
+def permutation_generator(n: int) -> list:
+    output = [x for x in range(n)]
+    random.shuffle(output)
+
+    return output
+
+
 def task4():
     p = permutation_generator(10)
     # p = [2, 3, 1, 4, 5]
@@ -46,5 +120,20 @@ def task4():
     log.info(count)
 
 
+def taskb_2():
+    size = 64
+    runs = 10_000_000
+    counts = [0 for _ in range(size + 1)]
+
+    for _ in range(runs):
+        count = count_cycles(permutation_generator(size))
+        counts[count] += 1
+
+    for i, x in enumerate(counts):
+        print(f"{i}: {x} - {round((x / runs) * 100)}%")
+
+
 if __name__ == '__main__':
-    task4()
+    # task4()
+    # task1()
+    taskb_2()

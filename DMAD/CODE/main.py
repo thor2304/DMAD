@@ -1,5 +1,10 @@
+import time
+import timeit
+from multiprocessing import Process, current_process
+from multiprocessing import Array as mp_array
+
 import math
-import numpy as np
+# import numpy as np
 import random
 import logging.config
 from typing import Callable, Tuple
@@ -114,20 +119,44 @@ def permutation_generator(n: int) -> list:
 
 def task4():
     p = permutation_generator(10)
-    # p = [2, 3, 1, 4, 5]
+    p = [2, 6, 0, 3, 1, 4, 5]
     log.info(p)
     count = count_cycles(p)
     log.info(count)
 
 
 def taskb_2():
-    size = 64
+    size = 16
     runs = 10_000_000
+
+    num_processes = 8
+
+    def run_counts(my_size: int, my_runs: int, output: mp_array):
+        process_name = current_process().name
+        print(process_name)
+
+        for _ in range(my_runs):
+            calculated_count = count_cycles(permutation_generator(my_size))
+            output[calculated_count] += 1
+
+    processes = []
+    results = []
+
+    for _ in range(num_processes):
+        r = mp_array('i', size + 1)
+        p = Process(target=run_counts, args=(size, runs // num_processes, r))
+        processes.append(p)
+        results.append(r)
+        p.start()
+
+    for process in processes:
+        process.join()
+
     counts = [0 for _ in range(size + 1)]
 
-    for _ in range(runs):
-        count = count_cycles(permutation_generator(size))
-        counts[count] += 1
+    for count in results:
+        for i, x in enumerate(count):
+            counts[i] += x
 
     for i, x in enumerate(counts):
         print(f"{i}: {x} - {round((x / runs) * 100)}%")
@@ -136,4 +165,8 @@ def taskb_2():
 if __name__ == '__main__':
     # task4()
     # task1()
+    start = time.perf_counter_ns()
     taskb_2()
+    end = time.perf_counter_ns()
+    print(f"Elapsed time: {(end - start) // 10**9} s")
+

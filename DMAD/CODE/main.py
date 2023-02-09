@@ -10,7 +10,7 @@ import logging.config
 from typing import Callable, Tuple
 from math import log10
 
-from DMAD.Logging.logging_config import config_dict
+from Logging.logging_config import config_dict
 
 logging.config.dictConfig(config_dict)
 
